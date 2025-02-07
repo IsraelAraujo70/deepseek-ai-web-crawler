@@ -1,4 +1,5 @@
 import asyncio
+import json
 
 from crawl4ai import AsyncWebCrawler
 from dotenv import load_dotenv
@@ -16,67 +17,43 @@ from utils.scraper_utils import (
 load_dotenv()
 
 
-async def crawl_venues():
+async def crawl_petshops():
     """
-    Main function to crawl venue data from the website.
+    Função principal para coletar dados de pet shops do site.
     """
-    # Initialize configurations
+    # Inicializa configurações
     browser_config = get_browser_config()
     llm_strategy = get_llm_strategy()
-    session_id = "venue_crawl_session"
 
-    # Initialize state variables
-    page_number = 1
-    all_venues = []
-    seen_names = set()
-
-    # Start the web crawler context
-    # https://docs.crawl4ai.com/api/async-webcrawler/#asyncwebcrawler
+    # Inicia o crawler
     async with AsyncWebCrawler(config=browser_config) as crawler:
-        while True:
-            # Fetch and process data from the current page
-            venues, no_results_found = await fetch_and_process_page(
-                crawler,
-                page_number,
-                BASE_URL,
-                CSS_SELECTOR,
-                llm_strategy,
-                session_id,
-                REQUIRED_KEYS,
-                seen_names,
-            )
+        # Executa o crawler
+        result = await crawler.arun(
+            url=BASE_URL,
+            config=llm_strategy
+        )
 
-            if no_results_found:
-                print("No more venues found. Ending crawl.")
-                break  # Stop crawling when "No Results Found" message appears
-
-            if not venues:
-                print(f"No venues extracted from page {page_number}.")
-                break  # Stop if no venues are extracted
-
-            # Add the venues from this page to the total list
-            all_venues.extend(venues)
-            page_number += 1  # Move to the next page
-
-            # Pause between requests to be polite and avoid rate limits
-            await asyncio.sleep(2)  # Adjust sleep time as needed
-
-    # Save the collected venues to a CSV file
-    if all_venues:
-        save_venues_to_csv(all_venues, "complete_venues.csv")
-        print(f"Saved {len(all_venues)} venues to 'complete_venues.csv'.")
-    else:
-        print("No venues were found during the crawl.")
-
-    # Display usage statistics for the LLM strategy
-    llm_strategy.show_usage()
+        if result.success and result.extracted_content:
+            # Converte o conteúdo extraído de string JSON para lista de dicionários
+            try:
+                pet_shops = json.loads(result.extracted_content)
+                # Processa e salva os resultados
+                save_venues_to_csv(pet_shops, "pet_shops.csv")
+                print(f"Salvos {len(pet_shops)} pet shops em 'pet_shops.csv'.")
+            except json.JSONDecodeError as e:
+                print(f"Erro ao decodificar JSON: {e}")
+                print("Conteúdo extraído:", result.extracted_content)
+        else:
+            print("Nenhum pet shop foi encontrado durante a busca.")
+            if result.error_message:
+                print(f"Erro: {result.error_message}")
 
 
 async def main():
     """
-    Entry point of the script.
+    Ponto de entrada do script.
     """
-    await crawl_venues()
+    await crawl_petshops()
 
 
 if __name__ == "__main__":

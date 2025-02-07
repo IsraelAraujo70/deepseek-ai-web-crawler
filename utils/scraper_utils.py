@@ -16,39 +16,49 @@ from utils.data_utils import is_complete_venue, is_duplicate_venue
 
 def get_browser_config() -> BrowserConfig:
     """
-    Returns the browser configuration for the crawler.
+    Retorna a configuração do navegador para o crawler.
 
     Returns:
-        BrowserConfig: The configuration settings for the browser.
+        BrowserConfig: As configurações do navegador.
     """
-    # https://docs.crawl4ai.com/core/browser-crawler-config/
     return BrowserConfig(
-        browser_type="chromium",  # Type of browser to simulate
-        headless=False,  # Whether to run in headless mode (no GUI)
-        verbose=True,  # Enable verbose logging
+        browser_type="chromium",
+        headless=True,
+        verbose=True
     )
 
 
-def get_llm_strategy() -> LLMExtractionStrategy:
+def get_llm_strategy() -> CrawlerRunConfig:
     """
-    Returns the configuration for the language model extraction strategy.
+    Retorna a configuração para a estratégia de extração usando modelo de linguagem.
 
     Returns:
-        LLMExtractionStrategy: The settings for how to extract data using LLM.
+        CrawlerRunConfig: As configurações para extração de dados.
     """
-    # https://docs.crawl4ai.com/api/strategies/#llmextractionstrategy
-    return LLMExtractionStrategy(
-        provider="groq/deepseek-r1-distill-llama-70b",  # Name of the LLM provider
-        api_token=os.getenv("GROQ_API_KEY"),  # API token for authentication
-        schema=Venue.model_json_schema(),  # JSON schema of the data model
-        extraction_type="schema",  # Type of extraction to perform
+    llm_strategy = LLMExtractionStrategy(
+        provider="openai/gpt-4o-mini",
+        api_token=os.getenv("OPENAI_API_KEY"),
+        schema={
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "address": {"type": "string"},
+                "phone": {"type": "string"}
+            },
+            "required": ["name", "address", "phone"]
+        },
+        extraction_type="schema",
         instruction=(
-            "Extract all venue objects with 'name', 'location', 'price', 'capacity', "
-            "'rating', 'reviews', and a 1 sentence description of the venue from the "
-            "following content."
-        ),  # Instructions for the LLM
-        input_format="markdown",  # Format of the input content
-        verbose=True,  # Enable verbose logging
+            "Extraia os dados dos pet shops incluindo nome, endereço e telefone "
+            "do conteúdo fornecido."
+        ),
+        input_format="markdown",
+        verbose=True,
+    )
+
+    return CrawlerRunConfig(
+        extraction_strategy=llm_strategy,
+        css_selector="article.listresult"
     )
 
 

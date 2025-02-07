@@ -1,13 +1,9 @@
 # config.py
 
-BASE_URL = "https://www.theknot.com/marketplace/wedding-reception-venues-atlanta-ga"
-CSS_SELECTOR = "[class^='info-container']"
+BASE_URL = "https://www.clickdisk.com.br/?tipo=comercial&q=petshop&cidade=pocos-de-caldas-mg"
+CSS_SELECTOR = "article.listresult"
 REQUIRED_KEYS = [
     "name",
-    "price",
-    "location",
-    "capacity",
-    "rating",
-    "reviews",
-    "description",
+    "address",
+    "phone"
 ]
